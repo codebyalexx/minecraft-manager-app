@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model server {
+model Server {
   id      String @id @unique @default(cuid())
   label   String @default("Unnamed")
   path    String

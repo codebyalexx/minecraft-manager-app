@@ -4,7 +4,7 @@ import { ChangeEvent, ChangeEventHandler, FormEvent, useState, useTransition } f
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { createServer } from "@/actions/create-server";
+import { createServer } from "@/actions/server.action";
 
 export type ServerDataType = {
     label: string;
