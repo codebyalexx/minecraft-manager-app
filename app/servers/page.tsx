@@ -1,13 +1,19 @@
 import { ServersList } from "@/components/servers-list";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { getServerManager } from "@/lib/servers";
 import { cn } from "@/lib/utils";
 import { getServers } from "@/queries/server.query";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 
 export default async function page() {
+    const serverManager = await getServerManager();
     const servers = await getServers();
+
+    for (const server of servers) {
+        if (serverManager.getInstance(server.id) === undefined) serverManager.register(server.id, server.path, server.cmdline);
+    }
 
     return <div className="space-y-2">
         <div className="flex justify-between items-center">

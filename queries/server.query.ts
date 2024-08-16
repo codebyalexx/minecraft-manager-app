@@ -8,3 +8,14 @@ export const getServers = async () => {
 
     return servers;
 }
+
+export const getServer = async (id: string) => {
+    /* It's getting server from the database and returning it */
+    const server = await prisma.server.findUnique({
+        where: {
+            id
+        }
+    })
+
+    return server;
+}
