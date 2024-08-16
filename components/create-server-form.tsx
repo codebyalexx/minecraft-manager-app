@@ -1,30 +1,32 @@
 "use client";
 
-import { ChangeEvent, ChangeEventHandler, FormEvent, useState } from "react";
+import { ChangeEvent, ChangeEventHandler, FormEvent, useState, useTransition } from "react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { createServer } from "@/actions/create-server";
 
-type FormType = {
+export type ServerDataType = {
     label: string;
     path: string;
     cmdline: string;
 }
 
-type ErrorType = {
+export type FormInputErrorType = {
     input: string;
     message: string;
 }
 
-const defaultFormData: FormType = {
+const defaultFormData: ServerDataType = {
     label: "",
     path: "",
     cmdline: "java -Xms256M -Xmx1G -jar {JAR_FILENAME}",
 }
 
 export const CreateServerForm = () => {
-    const [formData, setFormData] = useState(defaultFormData)
-    const [errors, setErrors] = useState<ErrorType[]>([])
+    const [formData, setFormData] = useState<ServerDataType>(defaultFormData)
+    const [errors, setErrors] = useState<FormInputErrorType[]>([])
+    const [isLoading, startTransition] = useTransition();
 
     const labelError = errors.find(e => e.input === "label");
     const pathError = errors.find(e => e.input === "path");
@@ -41,6 +43,18 @@ export const CreateServerForm = () => {
 
     return <form onSubmit={async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
+
+        setErrors([]);
+
+        startTransition(async () => {
+            const req = await createServer(formData)
+
+            if (req.success) {
+                alert("Succès !")
+            } else {
+                setErrors(req.errors || [])
+            }
+        });
     }} className="space-y-4">
         <h2 className="text-xl font-bold">Create Server</h2>
         <div className="w-full space-y-1">

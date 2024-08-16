@@ -3,14 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model server {
-  id    String  @id @unique @default(cuid())
-  label String  @default("Unnamed")
-  root  String?
-  jar   String  @default("server.jar")
-  args  String  @default("-Xms256M")
+  id      String @id @unique @default(cuid())
+  label   String @default("Unnamed")
+  path    String
+  cmdline String
 }
