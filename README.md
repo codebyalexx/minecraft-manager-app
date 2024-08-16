@@ -1,5 +1,8 @@
 # minecraft-manager-app
 
+The Minecraft Manager App allows you to mangage your local minecraft servers with a beautiful integrated UI using NextJS app!
+Project is currently in development state. If you want to contribute, please read the [contributing](#contributing) section of the repo.
+
 ## dependecies
 
 - Node v22
@@ -26,3 +29,7 @@ To build the app, run the following commands in your terminal:
 ### run the production build
 To run the production build, run the following commands in yout terminal:
 1. `npm run start`
+
+## contributing
+
+Contributing is not possible at this time. Please check back later.
