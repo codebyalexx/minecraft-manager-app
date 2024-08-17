@@ -11,7 +11,7 @@ Project is currently in development state. If you want to contribute, please rea
 ## installation
 
 Run the following commands in your terminal:
-1. `git clone ...`
+1. `git clone https://github.com/codebyalexx/minecraft-manager-app.git`
 2. `cd minecraft-manager-app`
 3. `npm install`
 

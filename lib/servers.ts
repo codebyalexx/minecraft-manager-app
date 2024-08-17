@@ -1,13 +1,16 @@
 "use server"
 
-import { ChildProcess, ChildProcessWithoutNullStreams, exec, spawn } from "child_process";
-import { existsSync } from "fs";
+import { ChildProcess, exec, spawn } from "child_process";
+import { existsSync, readFileSync } from "fs";
 import { lstat, readdir, unlink } from "fs/promises";
 import { join } from "path";
 import chalk from "chalk"
 import { Server as IOServer, Socket } from "socket.io"
-import express from "express"
-import { createServer, Server as HTTPServer } from "http";
+import { Server as SSHServer } from "ssh2"
+// @ts-ignore
+import SFTPServer from "ssh2-sftp-server"
+import util from "util"
+import { on } from "events";
 
 export type ServerState = "OFF" | "ON" | "STARTING" | "STOPPING";
 
@@ -235,6 +238,15 @@ class ServerInstance {
     get restartable() {
         return ["ON"].includes(this.state) && this.instance !== null;
     }
+
+    get cwd() {
+        let parsedPath = this.path;
+        parsedPath = parsedPath.replace(/(?<!\/)\/(?!\/)/g, "\\") // replacing slashes with anti slashes
+        parsedPath = parsedPath.replace(/(?<!\/\/)\/\/(?!\/\/)/g, "\\") // replacing double slashes with anti slashes
+        const jarFilename = parsedPath.split("\\")[parsedPath.split("\\").length - 1];
+        const cwd = parsedPath.replace(jarFilename, "")
+        return cwd
+    }
 }
 
 class ServerManager {
@@ -242,6 +254,8 @@ class ServerManager {
     ioServer: IOServer | null = null;
 
     constructor() {
+        this.initSftp()
+
         console.log(chalk.yellow("[ServerManager] Starting WebSocket server..."))
 
         this.ioServer = new IOServer({
@@ -277,6 +291,7 @@ class ServerManager {
             const sockets = this.ioServer?.sockets.sockets
             if (!sockets) return
             sockets.forEach(socket => {
+                if (!socket.connected) return
                 socket.emit('serverStateUpdate', {
                     serverId: id,
                     state
@@ -284,6 +299,7 @@ class ServerManager {
                 console.log(chalk.cyan("[ServerManager] Send server", id, "state to", socket.id))
             })
         } else {
+            if (!s.connected) return
             s.emit('serverStateUpdate', {
                 serverId: id,
                 state
@@ -297,6 +313,7 @@ class ServerManager {
             const sockets = this.ioServer?.sockets.sockets
             if (!sockets) return
             sockets.forEach(socket => {
+                if (!socket.connected) return
                 socket.emit('serverLogs', {
                     serverId: id,
                     logs
@@ -304,12 +321,94 @@ class ServerManager {
                 console.log(chalk.cyan("[ServerManager] Send server", id, "state to", socket.id))
             })
         } else {
+            if (!s.connected) return
             s.emit('serverLogs', {
                 serverId: id,
                 logs
             })
             console.log(chalk.cyan("[ServerManager] Send server", id, "state to", s.id))
         }
+    }
+
+    async initSftp() {
+        console.log(chalk.blueBright(`[ServerManager] Initializing SFTP Server`))
+
+        console.log(join(__dirname, "host.key"))
+        const keyExists = existsSync(join(__dirname, "host.key"))
+
+        if (!keyExists) {
+            const asyncExec = util.promisify(exec)
+            const cmd = `ssh-keygen -t rsa -b 4096 -f host.key -N ""`
+            const { stderr, stdout } = await asyncExec(cmd, {
+                cwd: __dirname
+            })
+
+            if (stderr) {
+                console.log(chalk.red("[ServerManager] Error has happened while trying to create a key for ssh server"))
+                console.error(stderr)
+            }
+
+            console.log(chalk.blueBright("[ServerManager] Create key at", join(__dirname, "host.key"), "for SSH Server"))
+        }
+
+        const sshServer = new SSHServer({
+            hostKeys: [readFileSync(join(__dirname, "host.key"))]
+        }, (client) => {
+            console.log("Client Connected")
+
+            let username: any = null
+
+            client.on('authentication', (ctx) => {
+                if (this.instances.some(instance => instance.id === ctx.username)) {
+                    username = ctx.username
+                    ctx.accept()
+                } else {
+                    ctx.reject()
+                }
+            }).on('ready', () => {
+                console.log(chalk.blueBright("[ServerManager] A new client has connected to SSH"))
+
+                client.on('session', (accept, reject) => {
+                    const session = accept()
+
+                    session.on('sftp', (accept, reject) => {
+                        console.log(chalk.blueBright("[ServerManager] SFTP Session started", username))
+
+                        if (username) {
+                            const serverInstance = this.instances.find(instance => instance.id === username)
+
+                            if (serverInstance) {
+                                const sftpStream = accept()
+
+                                const sftpServer = new SFTPServer(sftpStream, {
+                                    readOnly: false,
+                                    root: serverInstance.cwd
+                                })
+
+                                sftpServer.on('error', (err: any) => {
+                                    console.log(chalk.red("[ServerManager] An error has happened on the SFTP:"))
+                                    console.error(err)
+                                })
+
+                                sftpServer.on('end', () => {
+                                    console.log(chalk.blueBright("[ServerManager] SFTP Session", username, "ended"))
+                                })
+                            } else {
+                                reject()
+                            }
+                        } else {
+                            reject()
+                        }
+                    })
+                }).on('end', () => {
+                    console.log(chalk.blueBright("[ServerManager] SSH Client", username, "disconnected"))
+                })
+            })
+        })
+
+        sshServer.listen(2022, '0.0.0.0', () => {
+            console.log(chalk.blueBright(`[ServerManager] SFTP Server is Listening on 0.0.0.0:2022`))
+        })
     }
 }
 
