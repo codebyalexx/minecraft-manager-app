@@ -2,6 +2,7 @@
 
 import { sendServerCommand, startServer, stopServer } from "@/actions/server.action";
 import { ServerDataType } from "@/components/create-server-form";
+import { ServerNavbar } from "@/components/layout/server-navbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getServerManager, ServerState } from "@/lib/servers";
 import { socket } from "@/lib/socket";
@@ -171,4 +172,5 @@ export default function page({ params }: { params: { id: string } }) {
             </div>
         </main>
     </div>
+
 }
