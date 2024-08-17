@@ -200,6 +200,7 @@ class ServerInstance {
         this.instance = null
         this.state = "OFF"
         this.runId = ""
+        this.logs = []
     }
 
     /* getters */
