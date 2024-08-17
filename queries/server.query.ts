@@ -1,6 +1,7 @@
 "use server"
 
 import prisma from "@/lib/prisma"
+import { getServerManager } from "@/lib/servers";
 
 export const getServers = async () => {
     /* It's getting servers from the database and returning them */
@@ -18,4 +19,21 @@ export const getServer = async (id: string) => {
     })
 
     return server;
+}
+
+export const getServerState = async (id: string) => {
+    /* It's retrieving server instance */
+    const serverManager = await getServerManager();
+    const serverInstance = serverManager.getInstance(id);
+
+    if (!serverInstance) return {
+        success: false,
+        error: "The server instance hasn't been found!"
+    }
+
+    /* It's returning server state */
+    return {
+        success: true,
+        data: serverInstance.getState()
+    }
 }

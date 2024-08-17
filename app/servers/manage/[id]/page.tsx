@@ -26,6 +26,11 @@ export default async function page({ params }: { params: { id: string } }) {
     if (!serverInstance) return err("Server instance not found in the process.")
 
     return <>
-        <h2 className="text-xl font-bold text-center">{serverData.label}</h2>
+        <h2 className="text-xl font-bold text-center"><span className={cn(
+            "mr-2",
+            serverInstance.getState() === "OFF" ? "text-zinc-500" : "",
+            serverInstance.getState() === "STARTING" ? "text-yellow-500" : "",
+            serverInstance.getState() === "ON" ? "text-green-500" : ""
+        )}>•</span>{serverData.label}</h2>
     </>;
 }
