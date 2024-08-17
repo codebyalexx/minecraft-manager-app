@@ -175,6 +175,7 @@ class ServerInstance {
         const d = data.toString()
         if (this.debug) console.log(chalk.grey("[ServerManager] [" + this.id.slice(0, 5) + "]", d))
         this.logs.push(d)
+        this.manager?.sendServerLogs(this.id, JSON.stringify(this.logs))
 
         /* It's waiting for the server to be ON */
         if (this.state === "STARTING") {
@@ -196,6 +197,7 @@ class ServerInstance {
         const d = data.toString()
         if (this.debug) console.error("[ServerManager] [" + this.id.slice(0, 5) + "]", d)
         this.logs.push(d)
+        this.manager?.sendServerLogs(this.id, JSON.stringify(this.logs))
     }
 
     handleClose() {
@@ -266,6 +268,7 @@ class ServerManager {
 
         for (const instance of this.instances) {
             this.sendServerState(instance.id, instance.state, socket)
+            this.sendServerLogs(instance.id, JSON.stringify(instance.logs))
         }
     }
 
@@ -284,6 +287,26 @@ class ServerManager {
             s.emit('serverStateUpdate', {
                 serverId: id,
                 state
+            })
+            console.log(chalk.cyan("[ServerManager] Send server", id, "state to", s.id))
+        }
+    }
+
+    sendServerLogs(id: string, logs: string, s: Socket | undefined = undefined) {
+        if (s === undefined) {
+            const sockets = this.ioServer?.sockets.sockets
+            if (!sockets) return
+            sockets.forEach(socket => {
+                socket.emit('serverLogs', {
+                    serverId: id,
+                    logs
+                })
+                console.log(chalk.cyan("[ServerManager] Send server", id, "state to", socket.id))
+            })
+        } else {
+            s.emit('serverLogs', {
+                serverId: id,
+                logs
             })
             console.log(chalk.cyan("[ServerManager] Send server", id, "state to", s.id))
         }

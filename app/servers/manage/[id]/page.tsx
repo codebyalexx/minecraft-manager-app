@@ -9,13 +9,26 @@ import { cn } from "@/lib/utils";
 import { getServer, getServerState } from "@/queries/server.query";
 import { CpuIcon, DotIcon, EthernetPortIcon, HardDriveIcon, InfinityIcon, MemoryStick, MemoryStickIcon, PowerIcon, ServerIcon, SquareIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { createRef, useEffect, useRef, useState } from "react";
 
 export default function page({ params }: { params: { id: string } }) {
     const [isConnected, setIsConnected] = useState(socket.connected)
+    const [stateUpdateEvents, setStateUpdateEvents] = useState([])
 
     const [serverData, setServerData] = useState<ServerDataType>();
     const [serverState, setServerState] = useState<ServerState | 'FETCHING'>('FETCHING')
+
+    const [logs, setLogs] = useState([])
+
+    const consoleRef = useRef<HTMLDivElement>(null)
+
+    const scrollToBottomOfConsole = () => {
+        if (consoleRef.current) {
+            consoleRef.current.scrollTop = consoleRef.current.scrollHeight
+        }
+    }
+
+    scrollToBottomOfConsole()
 
     useEffect(() => {
         /* It's opening connection to the socket */
@@ -41,14 +54,26 @@ export default function page({ params }: { params: { id: string } }) {
             }
         }
 
+        /* It's handling serverLog event */
+        function onServerLogs(value: {
+            serverId: string,
+            logs: string
+        }) {
+            if (value.serverId === params.id) {
+                setLogs(JSON.parse(value.logs) as any)
+            }
+        }
+
         socket.on('connect', onConnect)
         socket.on('disconnect', onDisconnect)
         socket.on('serverStateUpdate', onServerStateUpdate)
+        socket.on('serverLogs', onServerLogs)
 
         return () => {
             socket.off('connect', onConnect)
             socket.off('disconnect', onDisconnect)
             socket.off('serverStateUpdate', onServerStateUpdate)
+            socket.disconnect()
         }
     }, [params.id])
 
@@ -117,9 +142,9 @@ export default function page({ params }: { params: { id: string } }) {
             </div>
         </aside>
         <main className="col-span-5 space-y-2">
-            <div className="flex flex-col justify-between h-96 bg-zinc-700 rounded-lg">
-                <div className="p-3 text-xs font-mono overflow-y-scroll">
-                    term output
+            <div className="flex flex-col justify-between h-96 pt-3 bg-zinc-700 rounded-lg">
+                <div className="p-3 pt-0 pb-4 text-xs font-mono overflow-y-scroll scrollbar" ref={consoleRef}>
+                    {logs.map((log: string) => <p>{log}</p>)}
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-lg">
                     <span className="text-white font-medium">$</span>

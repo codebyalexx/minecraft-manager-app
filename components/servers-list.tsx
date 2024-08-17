@@ -65,6 +65,7 @@ export const ServersList = ({ servers }: { servers: Server[] }) => {
             socket.off('connect', onConnect)
             socket.off('disconnect', onDisconnect)
             socket.off('serverStateUpdate', onServerStateUpdate)
+            socket.disconnect()
         }
     }, [servers])
 
