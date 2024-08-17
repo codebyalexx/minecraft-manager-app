@@ -1,21 +1,24 @@
 "use server"
 
 import { ChildProcess, ChildProcessWithoutNullStreams, exec, spawn } from "child_process";
-import { assert } from "console";
 import { existsSync } from "fs";
 import { lstat, readdir, unlink } from "fs/promises";
 import { join } from "path";
 import chalk from "chalk"
+import { Server as IOServer, Socket } from "socket.io"
+import express from "express"
+import { createServer, Server as HTTPServer } from "http";
 
 export type ServerState = "OFF" | "ON" | "STARTING" | "STOPPING";
 
 class ServerInstance {
     /* Server Infos */
+    manager: ServerManager | null = null;
     id: string = "";
     path: string = "";
     cmdline: string = "";
     state: ServerState = "OFF";
-    debug: boolean = true;
+    debug: boolean = false;
     logs: string[] = [];
     runId: string = "";
     serverType: string = "";
@@ -23,10 +26,11 @@ class ServerInstance {
     /* Processes */
     instance: ChildProcess | null = null;
 
-    constructor(id: string, path: string, cmdline: string) {
+    constructor(id: string, path: string, cmdline: string, manager: ServerManager) {
         this.id = id;
         this.path = path;
         this.cmdline = cmdline;
+        this.manager = manager;
         console.log(chalk.green("[ServerManager] Registered instance of server ", id))
     }
 
@@ -58,7 +62,7 @@ class ServerInstance {
                 stdio: ["pipe", "pipe", "pipe"],
             })
             this.instance = instance
-            this.state = "STARTING";
+            this.setState("STARTING")
 
             /* It's handling process events */
 
@@ -79,7 +83,7 @@ class ServerInstance {
         if (this.stoppable) {
             console.log("[")
             console.log("[ServerManager] Stopping", this.id, "server")
-            this.state = "STOPPING"
+            this.setState("STOPPING")
 
             /* It's killing process after 15s if the server isn't closed */
             const runId = this.runId
@@ -107,13 +111,13 @@ class ServerInstance {
                     exec(`taskkill /pid ${pid} /f`, (err, stdout, stderr) => {
                         if (err) {
                             console.log(chalk.red("[ServerManager] Could not stop", this.id, "server, error has happened:", err.message))
-                            this.state = "ON"
+                            this.setState("ON")
                             return
                         }
 
                         if (stderr) {
                             console.log(chalk.red("[ServerManager] Could not stop", this.id, "server, error has happened:", stderr))
-                            this.state = "ON"
+                            this.setState("ON")
                             return
                         }
 
@@ -173,14 +177,14 @@ class ServerInstance {
         this.logs.push(d)
 
         /* It's waiting for the server to be ON */
-        if (this.state !== "ON") {
+        if (this.state === "STARTING") {
             const loadedConditions = [
                 this.logs.some(x => x.includes("Enabled BungeeCord version")) && this.logs.some(x => x.includes("[INFO] Listening on /")),
                 this.logs.some(x => x.includes("Loading libraries, please wait...")) && this.logs.some(x => x.includes("For help, type \"help\""))
             ]
             if (loadedConditions.some(b => b === true)) {
                 console.log(chalk.green("[ServerManager] marked", this.id, "server as running"))
-                this.state = "ON"
+                this.setState("ON")
             }
 
             if (loadedConditions[0] === true) this.serverType = "bungeecord"
@@ -198,12 +202,17 @@ class ServerInstance {
         console.log(chalk.yellow("[ServerManager] Server", this.id, "process has stopped"))
         this.instance?.kill()
         this.instance = null
-        this.state = "OFF"
+        this.setState("OFF")
         this.runId = ""
         this.logs = []
     }
 
     /* getters */
+
+    setState(newState: ServerState) {
+        this.manager?.sendServerState(this.id, newState)
+        this.state = newState
+    }
 
     getState() {
         return this.state;
@@ -228,13 +237,56 @@ class ServerInstance {
 
 class ServerManager {
     instances: ServerInstance[] = [];
+    ioServer: IOServer | null = null;
+
+    constructor() {
+        console.log(chalk.yellow("[ServerManager] Starting WebSocket server..."))
+
+        this.ioServer = new IOServer({
+            cors: {
+                origin: 'http://localhost:3000'
+            }
+        })
+        this.ioServer.listen(4000)
+
+        const handleSocketConnection = this.handleSocketConnection.bind(this)
+        this.ioServer.on('connection', handleSocketConnection)
+    }
 
     register(id: string, path: string, cmdline: string) {
-        this.instances.push(new ServerInstance(id, path, cmdline))
+        this.instances.push(new ServerInstance(id, path, cmdline, this))
     }
 
     getInstance(id: string) {
         return this.instances.find(instance => instance.id === id);
+    }
+
+    handleSocketConnection(socket: Socket) {
+        console.log(chalk.cyan("[ServerManager] New connection to WebSocket", socket.id))
+
+        for (const instance of this.instances) {
+            this.sendServerState(instance.id, instance.state, socket)
+        }
+    }
+
+    sendServerState(id: string, state: ServerState, s: Socket | undefined = undefined) {
+        if (s === undefined) {
+            const sockets = this.ioServer?.sockets.sockets
+            if (!sockets) return
+            sockets.forEach(socket => {
+                socket.emit('serverStateUpdate', {
+                    serverId: id,
+                    state
+                })
+                console.log(chalk.cyan("[ServerManager] Send server", id, "state to", socket.id))
+            })
+        } else {
+            s.emit('serverStateUpdate', {
+                serverId: id,
+                state
+            })
+            console.log(chalk.cyan("[ServerManager] Send server", id, "state to", s.id))
+        }
     }
 }
 

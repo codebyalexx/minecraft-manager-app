@@ -4,6 +4,7 @@ import { startServer, stopServer } from "@/actions/server.action";
 import { ServerDataType } from "@/components/create-server-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getServerManager, ServerState } from "@/lib/servers";
+import { socket } from "@/lib/socket";
 import { cn } from "@/lib/utils";
 import { getServer, getServerState } from "@/queries/server.query";
 import { CpuIcon, DotIcon, EthernetPortIcon, HardDriveIcon, InfinityIcon, MemoryStick, MemoryStickIcon, PowerIcon, ServerIcon, SquareIcon } from "lucide-react";
@@ -11,8 +12,45 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function page({ params }: { params: { id: string } }) {
+    const [isConnected, setIsConnected] = useState(socket.connected)
+
     const [serverData, setServerData] = useState<ServerDataType>();
-    const [serverState, setServerState] = useState<ServerState>('OFF')
+    const [serverState, setServerState] = useState<ServerState | 'FETCHING'>('FETCHING')
+
+    useEffect(() => {
+        /* It's opening connection to the socket */
+        socket.connect()
+
+        /* It's handling connect event */
+        function onConnect() {
+            setIsConnected(true)
+        }
+
+        /* It's handling disonnect event */
+        function onDisconnect() {
+            setIsConnected(false)
+        }
+
+        /* It's handling serverStateUpate event */
+        function onServerStateUpdate(value: {
+            serverId: string,
+            state: ServerState
+        }) {
+            if (value.serverId === params.id) {
+                setServerState(value.state)
+            }
+        }
+
+        socket.on('connect', onConnect)
+        socket.on('disconnect', onDisconnect)
+        socket.on('serverStateUpdate', onServerStateUpdate)
+
+        return () => {
+            socket.off('connect', onConnect)
+            socket.off('disconnect', onDisconnect)
+            socket.off('serverStateUpdate', onServerStateUpdate)
+        }
+    }, [params.id])
 
     useEffect(() => {
         const fetch = async () => {
@@ -24,28 +62,9 @@ export default function page({ params }: { params: { id: string } }) {
             }
         }
 
-        const fetchState = async () => {
-            const req = await getServerState(params.id)
-
-            if (req.success) {
-                setServerState(req.data || "OFF")
-            } else {
-                console.error("Error", req.error)
-            }
-        }
-
         setTimeout(async () => {
             await fetch()
-            await fetchState()
         }, 0);
-
-        const loop = setInterval(async () => {
-            await fetchState()
-        }, 3000);
-
-        return () => {
-            clearInterval(loop)
-        }
     }, [params.id])
 
     return <div className="grid grid-cols-7 gap-2">
