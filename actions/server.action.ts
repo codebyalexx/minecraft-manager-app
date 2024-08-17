@@ -127,3 +127,26 @@ export const restartServer = async (id: string) => {
         success: true
     }
 }
+
+export const sendServerCommand = async (id: string, cmd: string) => {
+    /* It's retrieving server instance */
+    const serverManager = await getServerManager();
+    const serverInstance = serverManager.getInstance(id);
+
+    if (!serverInstance) return {
+        success: false,
+        error: "The server instance hasn't been found!"
+    }
+
+    /* It's checking if the server is restartable */
+    if (!serverInstance.restartable) return {
+        success: false,
+        error: "The server is not restartable!"
+    }
+
+    /* It's starting the server */
+    await serverInstance.executeCommand(cmd)
+    return {
+        success: true
+    }
+}

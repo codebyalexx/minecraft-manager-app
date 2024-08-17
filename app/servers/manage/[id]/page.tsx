@@ -1,6 +1,6 @@
 "use client"
 
-import { startServer, stopServer } from "@/actions/server.action";
+import { sendServerCommand, startServer, stopServer } from "@/actions/server.action";
 import { ServerDataType } from "@/components/create-server-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getServerManager, ServerState } from "@/lib/servers";
@@ -12,6 +12,8 @@ import Link from "next/link";
 import { createRef, useEffect, useRef, useState } from "react";
 
 export default function page({ params }: { params: { id: string } }) {
+    const [cmd, setCmd] = useState('')
+
     const [isConnected, setIsConnected] = useState(socket.connected)
     const [stateUpdateEvents, setStateUpdateEvents] = useState([])
 
@@ -148,7 +150,13 @@ export default function page({ params }: { params: { id: string } }) {
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-lg">
                     <span className="text-white font-medium">$</span>
-                    <input type="text" name="" id="" className="bg-transparent font-mono outline-none" placeholder="Type a command..." />
+                    <input type="text" name="" id="" className="bg-transparent font-mono outline-none w-full" placeholder="Type a command..." onKeyDown={async (e) => {
+                        if (e.key === "Enter" && cmd.length > 0 && serverState === "ON") {
+                            await sendServerCommand(params.id, cmd)
+                            scrollToBottomOfConsole()
+                            setCmd("")
+                        }
+                    }} value={cmd} onChange={(e) => setCmd(e.target.value)} />
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
