@@ -20,7 +20,7 @@ export type FormInputErrorType = {
 const defaultFormData: ServerDataType = {
     label: "",
     path: "",
-    cmdline: "java -Xms256M -Xmx1G -jar {JAR_FILENAME}",
+    cmdline: "java -Xms256M -Xmx1G -jar {JAR_FILENAME} nogui",
 }
 
 export const CreateServerForm = () => {

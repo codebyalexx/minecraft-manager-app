@@ -2,7 +2,7 @@
 
 import { Server } from "@prisma/client"
 import { Button } from "./ui/button"
-import { DotIcon, PlayIcon, PlugZapIcon, RecycleIcon, RefreshCcwIcon, SquareIcon, StopCircleIcon, Trash2Icon, ZapIcon } from "lucide-react"
+import { DotIcon, PlayIcon, PlugZapIcon, PowerIcon, PowerOff, PowerOffIcon, RecycleIcon, RefreshCcwIcon, SquareIcon, StopCircleIcon, Trash2Icon, ZapIcon } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
@@ -66,7 +66,7 @@ export const ServersList = ({ servers }: { servers: Server[] }) => {
                                 [server.id]: "STARTING"
                             })
                     }}>
-                        <PlayIcon className="w-4 h-4" />
+                        <PowerIcon className="w-4 h-4" />
                     </Button>
                     <Button className="size-8 p-0 flex items-center justify-center bg-zinc-800 text-white hover:bg-zinc-600" disabled={serverStates[server.id] === "OFF"} onClick={async (e) => {
                         e.preventDefault()
@@ -75,7 +75,7 @@ export const ServersList = ({ servers }: { servers: Server[] }) => {
                     }}>
                         <SquareIcon className="w-4 h-4" />
                     </Button>
-                    <Button className="size-8 p-0 flex items-center justify-center bg-zinc-800 text-white hover:bg-zinc-600" disabled={serverStates[server.id] === "OFF"} onClick={async (e) => {
+                    {/*<Button className="size-8 p-0 flex items-center justify-center bg-zinc-800 text-white hover:bg-zinc-600" disabled={serverStates[server.id] === "OFF"} onClick={async (e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         const req = await restartServer(server.id)
@@ -86,7 +86,7 @@ export const ServersList = ({ servers }: { servers: Server[] }) => {
                             })
                     }}>
                         <RefreshCcwIcon className="w-4 h-4" />
-                    </Button>
+                    </Button>*/}
                 </div>
             </Link>)}
         </div>

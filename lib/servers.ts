@@ -1,10 +1,11 @@
 "use server"
 
-import { ChildProcess, ChildProcessWithoutNullStreams, spawn } from "child_process";
+import { ChildProcess, ChildProcessWithoutNullStreams, exec, spawn } from "child_process";
 import { assert } from "console";
 import { existsSync } from "fs";
 import { lstat, readdir, unlink } from "fs/promises";
 import { join } from "path";
+import chalk from "chalk"
 
 export type ServerState = "OFF" | "ON" | "STARTING" | "STOPPING";
 
@@ -14,8 +15,10 @@ class ServerInstance {
     path: string = "";
     cmdline: string = "";
     state: ServerState = "OFF";
-    debug: boolean = false;
+    debug: boolean = true;
     logs: string[] = [];
+    runId: string = "";
+    serverType: string = "";
 
     /* Processes */
     instance: ChildProcess | null = null;
@@ -24,12 +27,13 @@ class ServerInstance {
         this.id = id;
         this.path = path;
         this.cmdline = cmdline;
-        console.log("[ServerManager] Registered instance of server ", id)
+        console.log(chalk.green("[ServerManager] Registered instance of server ", id))
     }
 
     async start() {
         if (this.startable) {
-            console.log("[ServerManager] Starting up", this.id, "server")
+            console.log(chalk.green("[ServerManager] Starting up", this.id, "server"))
+            this.runId = new Date().getTime().toString()
 
             /* It's parsing the path */
             let parsedPath = this.path;
@@ -51,9 +55,12 @@ class ServerInstance {
 
             const instance = spawn(java, args, {
                 cwd,
+                stdio: ["pipe", "pipe", "pipe"],
             })
             this.instance = instance
             this.state = "STARTING";
+
+            /* It's handling process events */
 
             const handleLog = this.handleLog.bind(this)
             instance.stdout.on('data', handleLog)
@@ -64,34 +71,80 @@ class ServerInstance {
             const handleClose = this.handleClose.bind(this)
             instance.on('close', handleClose)
         } else {
-            console.error("[ServerManager] Attemped to start", this.id, " ERROR: Already Running")
+            console.error(chalk.red("[ServerManager] Attemped to start", this.id, " ERROR: Already Running"))
         }
     }
 
     async stop(force = false) {
         if (this.stoppable) {
+            console.log("[")
+            console.log("[ServerManager] Stopping", this.id, "server")
             this.state = "STOPPING"
-            await this.executeCommand("stop")
-            await this.executeCommand("end")
+
+            /* It's killing process after 15s if the server isn't closed */
+            const runId = this.runId
+            setTimeout(() => {
+                if (this.runId === runId && !this.instance?.killed) {
+                    console.log(chalk.red('[ServerManager] 15s since server stop signal has come, forcing stop of', this.id))
+                    this.instance?.kill('SIGKILL')
+                }
+            }, 15000)
+
+            /* It's sending instruction to the server to stop */
+            if (this.serverType === "spigot") {
+                await this.executeCommand("stop")
+            } else {
+                const os = process.platform
+                const pid = this.instance?.pid
+
+                if (!pid) {
+                    console.log(chalk.red("[ServerManager] Could not stop", this.id, "server cause subprocess has no PID"))
+                    return
+                }
+
+                // Windows
+                if (os === "win32") {
+                    exec(`taskkill /pid ${pid} /f`, (err, stdout, stderr) => {
+                        if (err) {
+                            console.log(chalk.red("[ServerManager] Could not stop", this.id, "server, error has happened:", err.message))
+                            this.state = "ON"
+                            return
+                        }
+
+                        if (stderr) {
+                            console.log(chalk.red("[ServerManager] Could not stop", this.id, "server, error has happened:", stderr))
+                            this.state = "ON"
+                            return
+                        }
+
+                        this.instance?.kill("SIGKILL")
+                        console.log(chalk.yellow(`[ServerManager] killed ${this.id} server (pid: ${pid}). stdout: ${stdout}`))
+                    })
+                } else {
+                    console.log(chalk.red("[ServerManager] Could not stop", this.id, "server cause OS is not supported, trying a subprocess.kill (result no guaranteed)"))
+                    this.instance?.kill("SIGKILL")
+                }
+            }
+
         } else {
-            console.error("[ServerManager] Attemped to stop", this.id, " ERROR: Server instance is null or the server is not stoppable")
+            console.log(chalk.red("[ServerManager] Attemped to stop", this.id, " ERROR: Server instance is null or the server is not stoppable"))
         }
     }
 
     async restart() {
         if (this.restartable) {
-            console.log("[ServerManager] Restarting", this.id, "server")
+            console.log(chalk.yellow("[ServerManager] Restarting", this.id, "server"))
             this.stop()
             this.start()
 
         } else {
-            console.error("[ServerManager] Attemped to restart", this.id, " ERROR: Server is not restartable")
+            console.log(chalk.red("[ServerManager] Attemped to restart", this.id, " ERROR: Server is not restartable"))
         }
     }
 
     async executeCommand(cmd: string) {
         this.instance?.stdin?.write(cmd + "\n")
-        console.log("[ServerManager] Successfully executed '", cmd, "' command on", this.id, "reponse:")
+        console.log(chalk.blue("[ServerManager] Successfully executed '", cmd, "' command on", this.id, "reponse:"))
     }
 
     async deleteSessionLock(dir: string) {
@@ -116,14 +169,23 @@ class ServerInstance {
 
     handleLog(data: string) {
         const d = data.toString()
-        if (this.debug) console.log("[ServerManager] [" + this.id.slice(0, 5) + "]", d)
+        if (this.debug) console.log(chalk.grey("[ServerManager] [" + this.id.slice(0, 5) + "]", d))
         this.logs.push(d)
 
-        const loadedConditions = [
-            this.logs.some(x => x.includes("Enabled BungeeCord version")) && this.logs.some(x => x.includes("[INFO] Listening on /")),
-            this.logs.some(x => x.includes("Loading libraries, please wait...")) && this.logs.some(x => x.includes("For help, type \"help\""))
-        ]
-        if (loadedConditions.some(b => b === true)) this.state = "ON"
+        /* It's waiting for the server to be ON */
+        if (this.state !== "ON") {
+            const loadedConditions = [
+                this.logs.some(x => x.includes("Enabled BungeeCord version")) && this.logs.some(x => x.includes("[INFO] Listening on /")),
+                this.logs.some(x => x.includes("Loading libraries, please wait...")) && this.logs.some(x => x.includes("For help, type \"help\""))
+            ]
+            if (loadedConditions.some(b => b === true)) {
+                console.log(chalk.green("[ServerManager] marked", this.id, "server as running"))
+                this.state = "ON"
+            }
+
+            if (loadedConditions[0] === true) this.serverType = "bungeecord"
+            if (loadedConditions[1] === true) this.serverType = "spigot"
+        }
     }
 
     handleError(data: string) {
@@ -133,10 +195,11 @@ class ServerInstance {
     }
 
     handleClose() {
-        console.log("[ServerManager] Server", this.id, "process has stopped")
+        console.log(chalk.yellow("[ServerManager] Server", this.id, "process has stopped"))
         this.instance?.kill()
         this.instance = null
         this.state = "OFF"
+        this.runId = ""
     }
 
     /* getters */
