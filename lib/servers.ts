@@ -99,37 +99,10 @@ class ServerInstance {
             /* It's sending instruction to the server to stop */
             if (this.serverType === "spigot") {
                 await this.executeCommand("stop")
+            } else if (this.serverType === "bungeecord") {
+                await this.executeCommand("end")
             } else {
-                const os = process.platform
-                const pid = this.instance?.pid
-
-                if (!pid) {
-                    console.log(chalk.red("[ServerManager] Could not stop", this.id, "server cause subprocess has no PID"))
-                    return
-                }
-
-                // Windows
-                if (os === "win32") {
-                    exec(`taskkill /pid ${pid} /f`, (err, stdout, stderr) => {
-                        if (err) {
-                            console.log(chalk.red("[ServerManager] Could not stop", this.id, "server, error has happened:", err.message))
-                            this.setState("ON")
-                            return
-                        }
-
-                        if (stderr) {
-                            console.log(chalk.red("[ServerManager] Could not stop", this.id, "server, error has happened:", stderr))
-                            this.setState("ON")
-                            return
-                        }
-
-                        this.instance?.kill("SIGKILL")
-                        console.log(chalk.yellow(`[ServerManager] killed ${this.id} server (pid: ${pid}). stdout: ${stdout}`))
-                    })
-                } else {
-                    console.log(chalk.red("[ServerManager] Could not stop", this.id, "server cause OS is not supported, trying a subprocess.kill (result no guaranteed)"))
-                    this.instance?.kill("SIGKILL")
-                }
+                this.instance?.kill("SIGTERM")
             }
 
         } else {
