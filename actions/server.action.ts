@@ -4,18 +4,28 @@ import { FormInputErrorType, ServerDataType } from "@/components/create-server-f
 import prisma from "@/lib/prisma";
 import { getServerManager } from "@/lib/servers";
 
-export const createServer = async ({ label, path, cmdline }: ServerDataType) => {
+const getServerDataErrors = (data: ServerDataType & { id?: string }) => {
     const errors: FormInputErrorType[] = [];
+
+    if (data.id) {
+        /* It's checking the ID validity */
+        if (data.id.length === 0) {
+            errors.push({
+                input: "id",
+                message: "The server ID should not be empty."
+            })
+        }
+    }
 
     /* It's checking the label validity */
     const labelRegex = /^[A-Za-z -.\[\]\(\)]+$/;
-    if (label.length === 0) {
+    if (data.label.length === 0) {
         errors.push({
             input: "label",
             message: "Label input should not be empty."
         })
     }
-    else if (!labelRegex.test(label)) {
+    else if (!labelRegex.test(data.label)) {
         errors.push({
             input: "label",
             message: "Label input is valid. Here is the allowed chars: A-Za-z -.[]()"
@@ -23,7 +33,7 @@ export const createServer = async ({ label, path, cmdline }: ServerDataType) => 
     }
 
     /* It's checking the path validity */
-    if (path.length === 0) {
+    if (data.path.length === 0) {
         errors.push({
             input: "path",
             message: "Path input should not be empty."
@@ -31,12 +41,18 @@ export const createServer = async ({ label, path, cmdline }: ServerDataType) => 
     }
 
     /* It's checking the cmdline validity */
-    if (cmdline.length === 0) {
+    if (data.cmdline.length === 0) {
         errors.push({
             input: "cmdline",
             message: "Command Line input should not be empty."
         })
     }
+
+    return errors
+}
+
+export const createServer = async ({ label, path, cmdline }: ServerDataType) => {
+    const errors = getServerDataErrors({ label, path, cmdline })
 
     /* It's returning errors if has some */
     if (errors.length > 0) return {
@@ -56,6 +72,33 @@ export const createServer = async ({ label, path, cmdline }: ServerDataType) => 
     return {
         success: true,
         data: serverData
+    }
+}
+
+export const editServer = async ({ id, label, path, cmdline }: ServerDataType & { id: string }) => {
+    const errors = getServerDataErrors({ id, label, path, cmdline })
+
+    /* It's returning errors if has some */
+    if (errors.length > 0) return {
+        success: false,
+        errors
+    }
+
+    /* It's adding server to the database and returning success */
+    const update = await prisma.server.update({
+        where: {
+            id
+        },
+        data: {
+            label,
+            path,
+            cmdline
+        }
+    })
+
+    return {
+        success: true,
+        data: update
     }
 }
 

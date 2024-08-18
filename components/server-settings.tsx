@@ -5,10 +5,12 @@ import { FormInputErrorType, ServerDataType } from "./create-server-form";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { Loader } from "./loader";
+import { editServer } from "@/actions/server.action";
 
 
 
-export const ServerSettings = ({ defaultFormData }: { defaultFormData: ServerDataType }) => {
+export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData: ServerDataType, serverId: string }) => {
     const [formData, setFormData] = useState<ServerDataType>(defaultFormData)
     const [errors, setErrors] = useState<FormInputErrorType[]>([])
     const [isLoading, startTransition] = useTransition();
@@ -32,16 +34,16 @@ export const ServerSettings = ({ defaultFormData }: { defaultFormData: ServerDat
         setErrors([]);
 
         startTransition(async () => {
-            /*const req = await createServer(formData)
+            const req = await editServer({ ...formData, id: serverId })
 
             if (req.success) {
                 alert("Succès !")
             } else {
                 setErrors(req.errors || [])
-            }*/
+            }
         });
-    }} className="space-y-4 bg-zinc-700 p-2 rounded-lg w-full max-w-2xl">
-        <h2 className="text-xl font-bold">Create Server</h2>
+    }} className="space-y-4 bg-zinc-700 p-4 rounded-lg w-full max-w-2xl">
+        <h2 className="text-xl font-bold">Server Infos</h2>
         <div className="w-full space-y-1">
             <Label htmlFor="label" className={labelError ? "text-red-500" : ""}>Server Label</Label>
             <Input id="label" placeholder="Lobby" required value={formData.label} onChange={handleChange} className={labelError ? "border-red-500" : ""} />
@@ -59,8 +61,8 @@ export const ServerSettings = ({ defaultFormData }: { defaultFormData: ServerDat
             <Input id="cmdline" placeholder="java -Xms256M -Xmx1G -jar {JAR_FILENAME}" required value={formData.cmdline} onChange={handleChange} className={cmdlineError ? "border-red-500" : ""} />
             {cmdlineError ? <p className="text-sm text-red-500 font-semibold">{cmdlineError.message}</p> : null}
         </div>
-        <Button type="submit" variant={"secondary"}>
-            Save
+        <Button type="submit" variant={"secondary"} className="items-center gap-2" disabled={isLoading}>
+            {isLoading ? <><Loader /> Saving...</> : <>Save</>}
         </Button>
     </form>
 }

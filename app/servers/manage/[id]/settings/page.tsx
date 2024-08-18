@@ -14,9 +14,9 @@ export default async function page({ params }: { params: { id: string } }) {
 
     return <div className="w-full flex items-center justify-center">
         <ServerSettings defaultFormData={{
-            cmdline: "",
-            label: "",
-            path: ""
-        }} />
+            cmdline,
+            label,
+            path
+        }} serverId={params.id} />
     </div>;
 }
