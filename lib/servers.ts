@@ -6,11 +6,8 @@ import { lstat, readdir, unlink } from "fs/promises";
 import { join } from "path";
 import chalk from "chalk"
 import { Server as IOServer, Socket } from "socket.io"
-import { Server as SSHServer } from "ssh2"
-// @ts-ignore
-import SFTPServer from "ssh2-sftp-server"
 import util from "util"
-import { on } from "events";
+import ftpd from "ftpd"
 
 export type ServerState = "OFF" | "ON" | "STARTING" | "STOPPING";
 
@@ -25,6 +22,8 @@ class ServerInstance {
     logs: string[] = [];
     runId: string = "";
     serverType: string = "";
+    sftpClient: any | null = null;
+    sftpConnected: boolean = false;
 
     /* Processes */
     instance: ChildProcess | null = null;
@@ -331,84 +330,137 @@ class ServerManager {
     }
 
     async initSftp() {
-        console.log(chalk.blueBright(`[ServerManager] Initializing SFTP Server`))
+        console.log(chalk.blueBright(`[ServerManager] Initializing FTP Server`))
 
-        console.log(join(__dirname, "host.key"))
-        const keyExists = existsSync(join(__dirname, "host.key"))
+        const self = this
+
+        const keyExists = existsSync(join(__dirname, "ftpd.key"))
+        const crsExists = existsSync(join(__dirname, "ftpd.crs"))
+        const crtExists = existsSync(join(__dirname, "ftpd.crt"))
 
         if (!keyExists) {
             const asyncExec = util.promisify(exec)
-            const cmd = `ssh-keygen -t rsa -b 4096 -f host.key -N ""`
+            const cmd = `openssl genpkey -algorithm RSA -out ftpd.key -pkeyopt rsa_keygen_bits:2048`
             const { stderr, stdout } = await asyncExec(cmd, {
                 cwd: __dirname
             })
 
             if (stderr) {
-                console.log(chalk.red("[ServerManager] Error has happened while trying to create a key for ssh server"))
+                console.log(chalk.red("[ServerManager] Error has happened while trying to create a key for FTP server"))
                 console.error(stderr)
             }
 
-            console.log(chalk.blueBright("[ServerManager] Create key at", join(__dirname, "host.key"), "for SSH Server"))
+            console.log(chalk.blueBright("[ServerManager] Created key at", join(__dirname, "ftpd.key"), "for FTP Server"))
         }
 
-        const sshServer = new SSHServer({
-            hostKeys: [readFileSync(join(__dirname, "host.key"))]
-        }, (client) => {
-            console.log("Client Connected")
+        if (!crsExists) {
+            const asyncExec = util.promisify(exec)
+            const cmd = `openssl req -new -key ftpd.key -out ftpd.csr -subj "/C=FR/ST=Ile-de-France/L=Paris/O=CodeByAlexx/OU=IT/CN=imalexx.com"`
+            const { stderr, stdout } = await asyncExec(cmd, {
+                cwd: __dirname
+            })
 
+            if (stderr) {
+                console.log(chalk.red("[ServerManager] Error has happened while trying to create a CRS for FTP server"))
+                console.error(stderr)
+            }
+
+            console.log(chalk.blueBright("[ServerManager] Created CRS at", join(__dirname, "ftpd.crs"), "for FTP Server"))
+        }
+
+        if (!crtExists) {
+            const asyncExec = util.promisify(exec)
+            const cmd = `openssl x509 -req -in ftpd.csr -signkey ftpd.key -out ftpd.crt -days 365`
+            const { stderr, stdout } = await asyncExec(cmd, {
+                cwd: __dirname
+            })
+
+            if (stderr) {
+                console.log(chalk.red("[ServerManager] Error has happened while trying to create a CRT for FTP server"))
+                console.error(stderr)
+            }
+
+            console.log(chalk.blueBright("[ServerManager] Created CRT at", join(__dirname, "ftpd.crt"), "for FTP Server"))
+        }
+
+        const ftpOptions = {
+            host: "127.0.0.1",
+            port: 21,
+            tls: {
+                key: readFileSync(join(__dirname, "ftpd.key")),
+                cert: readFileSync(join(__dirname, "ftpd.crt"))
+            }
+        }
+
+        const ftp = new ftpd.FtpServer(ftpOptions.host, {
+            getInitialCwd: function (connection, callback: any) {
+                if (callback) callback(null, '/')
+            },
+            getRoot: function (connection) {
+                const { username } = connection
+
+                const serverInstance = self.instances.find((instance) => instance.id === username)
+
+                if (serverInstance) return serverInstance.cwd
+
+                return process.cwd()
+            },
+            pasvPortRangeStart: 1025,
+            pasvPortRangeEnd: 1050,
+            tlsOptions: ftpOptions.tls,
+            allowUnauthorizedTls: true,
+            useWriteFile: false,
+            useReadFile: false,
+            uploadMaxSlurpSize: 7000,
+            // @ts-ignore
+            allowedCommands: [
+                'XMKD',
+                'AUTH',
+                'TLS',
+                'SSL',
+                'USER',
+                'PASS',
+                'PWD',
+                'OPTS',
+                'TYPE',
+                'PORT',
+                'PASV',
+                'LIST',
+                'CWD',
+                'MKD',
+                'SIZE',
+                'STOR',
+                'MDTM',
+                'DELE',
+                'QUIT',
+                'EPSV',
+                'RETR'
+            ],
+            logLevel: 0
+        })
+
+        ftp.on('error', function (error: any) {
+            console.log('FTP Server error:', error)
+        })
+
+        ftp.on('client:connected', function (connection: any) {
             let username: any = null
 
-            client.on('authentication', (ctx) => {
-                if (this.instances.some(instance => instance.id === ctx.username)) {
-                    username = ctx.username
-                    ctx.accept()
-                } else {
-                    ctx.reject()
-                }
-            }).on('ready', () => {
-                console.log(chalk.blueBright("[ServerManager] A new client has connected to SSH"))
+            console.log('client connected: ' + connection.remoteAddress)
 
-                client.on('session', (accept, reject) => {
-                    const session = accept()
+            connection.on('command:user', function (user: any, success: any, failure: any) {
+                username = user
+                success()
+            })
 
-                    session.on('sftp', (accept, reject) => {
-                        console.log(chalk.blueBright("[ServerManager] SFTP Session started", username))
-
-                        if (username) {
-                            const serverInstance = this.instances.find(instance => instance.id === username)
-
-                            if (serverInstance) {
-                                const sftpStream = accept()
-
-                                const sftpServer = new SFTPServer(sftpStream, {
-                                    readOnly: false,
-                                    root: serverInstance.cwd
-                                })
-
-                                sftpServer.on('error', (err: any) => {
-                                    console.log(chalk.red("[ServerManager] An error has happened on the SFTP:"))
-                                    console.error(err)
-                                })
-
-                                sftpServer.on('end', () => {
-                                    console.log(chalk.blueBright("[ServerManager] SFTP Session", username, "ended"))
-                                })
-                            } else {
-                                reject()
-                            }
-                        } else {
-                            reject()
-                        }
-                    })
-                }).on('end', () => {
-                    console.log(chalk.blueBright("[ServerManager] SSH Client", username, "disconnected"))
-                })
+            connection.on('command:pass', function (pass: any, success: any, failure: any) {
+                success(username)
             })
         })
 
-        sshServer.listen(2022, '0.0.0.0', () => {
-            console.log(chalk.blueBright(`[ServerManager] SFTP Server is Listening on 0.0.0.0:2022`))
-        })
+        ftp.debugging = 4
+        ftp.listen(ftpOptions.port)
+        console.log('Listening on port ' + ftpOptions.port)
     }
 }
 
