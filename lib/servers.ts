@@ -149,8 +149,13 @@ class ServerInstance {
     }
 
     async executeCommand(cmd: string) {
-        this.instance?.stdin?.write(cmd + "\n")
-        console.log(chalk.blue("[ServerManager] Successfully executed '", cmd, "' command on", this.id, "reponse:"))
+        const stdin = this.instance?.stdin
+
+        stdin?.write(cmd + "\n\r")
+
+        if (stdin) { console.log(chalk.blue("[ServerManager] Successfully executed '", cmd, "' command on", this.id)) } else {
+            console.log(chalk.red("[ServerManager] An error has happened while trying to execute commad on", this.id, ": STDIN is no present"))
+        }
     }
 
     async deleteSessionLock(dir: string) {
@@ -345,12 +350,8 @@ class ServerManager {
                 cwd: __dirname
             })
 
-            if (stderr) {
-                console.log(chalk.red("[ServerManager] Error has happened while trying to create a key for FTP server"))
-                console.error(stderr)
-            }
-
-            console.log(chalk.blueBright("[ServerManager] Created key at", join(__dirname, "ftpd.key"), "for FTP Server"))
+            console.log(chalk.blueBright("[ServerManager] Created key at", join(__dirname, "ftpd.key"), "for FTP Server. Outputs:"))
+            console.log(chalk.gray(stderr, stdout))
         }
 
         if (!crsExists) {
@@ -360,12 +361,8 @@ class ServerManager {
                 cwd: __dirname
             })
 
-            if (stderr) {
-                console.log(chalk.red("[ServerManager] Error has happened while trying to create a CRS for FTP server"))
-                console.error(stderr)
-            }
-
-            console.log(chalk.blueBright("[ServerManager] Created CRS at", join(__dirname, "ftpd.crs"), "for FTP Server"))
+            console.log(chalk.blueBright("[ServerManager] Created CRS at", join(__dirname, "ftpd.crs"), "for FTP Server. Outputs:"))
+            console.log(chalk.gray(stderr, stdout))
         }
 
         if (!crtExists) {
@@ -375,12 +372,8 @@ class ServerManager {
                 cwd: __dirname
             })
 
-            if (stderr) {
-                console.log(chalk.red("[ServerManager] Error has happened while trying to create a CRT for FTP server"))
-                console.error(stderr)
-            }
-
-            console.log(chalk.blueBright("[ServerManager] Created CRT at", join(__dirname, "ftpd.crt"), "for FTP Server"))
+            console.log(chalk.blueBright("[ServerManager] Created CRT at", join(__dirname, "ftpd.crt"), "for FTP Server. Outputs:"))
+            console.log(chalk.gray(stderr, stdout))
         }
 
         const ftpOptions = {
