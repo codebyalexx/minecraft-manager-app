@@ -8,6 +8,7 @@ import chalk from "chalk"
 import { Server as IOServer, Socket } from "socket.io"
 import util from "util"
 import ftpd from "ftpd"
+import { FileInfo, Client as FTPClient } from "basic-ftp"
 
 export type ServerState = "OFF" | "ON" | "STARTING" | "STOPPING";
 
@@ -22,8 +23,8 @@ class ServerInstance {
     logs: string[] = [];
     runId: string = "";
     serverType: string = "";
-    sftpClient: any | null = null;
-    sftpConnected: boolean = false;
+    ftpClient: any | null = null;
+
 
     /* Processes */
     instance: ChildProcess | null = null;
@@ -34,6 +35,7 @@ class ServerInstance {
         this.cmdline = cmdline;
         this.manager = manager;
         console.log(chalk.green("[ServerManager] Registered instance of server ", id))
+        this.requireFtp()
     }
 
     async start() {
@@ -189,6 +191,65 @@ class ServerInstance {
         this.logs = []
     }
 
+    async requireFtp() {
+        return new Promise(async (resolve) => {
+            const interv = setInterval(async () => {
+                if (this.manager?.ftpStarted === false) return;
+                if (this.ftpClient === null) {
+                    this.ftpClient = new FTPClient()
+                    this.ftpClient.verbose = true
+
+                    clearInterval(interv);
+                    resolve(true)
+                } else {
+                    clearInterval(interv)
+                    resolve(true)
+                }
+            }, 500);
+        })
+    }
+
+    async listDir(path: string) {
+        return new Promise(async (resolve) => {
+            const rvalue: any[] = []
+
+            console.log("getting ftp")
+
+            // wait for ftp connection if needed
+            await this.requireFtp()
+
+            console.log("ftp ok, connecting")
+
+            await this.ftpClient.access({
+                host: "localhost",
+                user: this.id,
+                password: "",
+                secure: false,
+            })
+
+            console.log("connection ok, listing")
+
+            const dirFiles: FileInfo[] = await this.ftpClient.list(path)
+
+            console.log("listin ok, iterating")
+
+            for (const file of dirFiles) {
+                rvalue.push({
+                    type: file.isFile ? "file" : (file.isDirectory ? "dir" : "?"),
+                    name: file.name,
+                    modifiedAt: file.modifiedAt || file.rawModifiedAt || null,
+                    size: file.size
+                })
+            }
+
+            console.log("iterating ok, resolving")
+
+            await this.ftpClient.close()
+
+            resolve(rvalue)
+        })
+    }
+
     /* getters */
 
     setState(newState: ServerState) {
@@ -229,6 +290,7 @@ class ServerInstance {
 class ServerManager {
     instances: ServerInstance[] = [];
     ioServer: IOServer | null = null;
+    ftpStarted: boolean = false;
 
     constructor() {
         this.initSftp()
@@ -404,7 +466,8 @@ class ServerManager {
                 'DELE',
                 'QUIT',
                 'EPSV',
-                'RETR'
+                'RETR',
+                'MLSD'
             ],
             logLevel: 0
         })
@@ -431,6 +494,7 @@ class ServerManager {
         ftp.debugging = 4
         ftp.listen(ftpOptions.port)
         console.log('Listening on port ' + ftpOptions.port)
+        this.ftpStarted = true;
     }
 }
 

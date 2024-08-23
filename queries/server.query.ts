@@ -38,7 +38,7 @@ export const getServerState = async (id: string) => {
     }
 }
 
-export const getSftpDir = async (serverId: string, dir: string) => {
+export const getServerDir = async (serverId: string, dir: string) => {
     /* It's retrieving server instance */
     const serverManager = await getServerManager();
     const serverInstance = serverManager.getInstance(serverId);
@@ -48,6 +48,6 @@ export const getSftpDir = async (serverId: string, dir: string) => {
         error: "The server instance hasn't been found!"
     }
 
-    /* It's getting dir files */
-    return []
+    const content: any = await serverInstance.listDir(dir)
+    return content
 }
