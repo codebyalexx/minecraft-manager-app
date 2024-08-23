@@ -10,13 +10,14 @@ export default async function page({ params }: { params: { id: string } }) {
         <ErrorMessage>The server <CodeBlock inline>{params.id}</CodeBlock> cannot be found in the database.</ErrorMessage>
     </div>
 
-    const { cmdline, label, path } = serverData
+    const { cmdline, label, path, autoStart } = serverData
 
     return <div className="w-full flex items-center justify-center">
         <ServerSettings defaultFormData={{
             cmdline,
             label,
-            path
+            path,
+            autoStart
         }} serverId={params.id} />
     </div>;
 }

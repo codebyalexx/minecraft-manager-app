@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
+    "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-navigation-menu": "^1.2.0",
@@ -28,11 +29,13 @@
     "ftpd": "^0.2.16",
     "lucide-react": "^0.428.0",
     "next": "14.2.5",
+    "next-themes": "^0.3.0",
     "prisma": "^5.18.0",
     "react": "^18",
     "react-dom": "^18",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
+    "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "util": "^0.12.5"

@@ -246,8 +246,12 @@ class ServerManager {
         this.ioServer.on('connection', handleSocketConnection)
     }
 
-    register(id: string, path: string, cmdline: string) {
-        this.instances.push(new ServerInstance(id, path, cmdline, this))
+    register(id: string, path: string, cmdline: string, start: boolean) {
+        const instance = new ServerInstance(id, path, cmdline, this)
+        this.instances.push(instance)
+        if (start) {
+            instance.start()
+        }
     }
 
     getInstance(id: string) {

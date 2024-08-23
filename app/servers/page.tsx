@@ -12,7 +12,7 @@ export default async function page() {
     const servers = await getServers();
 
     for (const server of servers) {
-        if (serverManager.getInstance(server.id) === undefined) serverManager.register(server.id, server.path, server.cmdline);
+        if (serverManager.getInstance(server.id) === undefined) serverManager.register(server.id, server.path, server.cmdline, server.autoStart);
     }
 
     return <div className="space-y-2">

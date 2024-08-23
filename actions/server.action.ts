@@ -51,8 +51,8 @@ const getServerDataErrors = (data: ServerDataType & { id?: string }) => {
     return errors
 }
 
-export const createServer = async ({ label, path, cmdline }: ServerDataType) => {
-    const errors = getServerDataErrors({ label, path, cmdline })
+export const createServer = async ({ label, path, cmdline, autoStart }: ServerDataType) => {
+    const errors = getServerDataErrors({ label, path, cmdline, autoStart })
 
     /* It's returning errors if has some */
     if (errors.length > 0) return {
@@ -65,7 +65,8 @@ export const createServer = async ({ label, path, cmdline }: ServerDataType) => 
         data: {
             label,
             path,
-            cmdline
+            cmdline,
+            autoStart
         }
     })
 
@@ -75,8 +76,8 @@ export const createServer = async ({ label, path, cmdline }: ServerDataType) => 
     }
 }
 
-export const editServer = async ({ id, label, path, cmdline }: ServerDataType & { id: string }) => {
-    const errors = getServerDataErrors({ id, label, path, cmdline })
+export const editServer = async ({ id, label, path, cmdline, autoStart }: ServerDataType & { id: string }) => {
+    const errors = getServerDataErrors({ id, label, path, cmdline, autoStart })
 
     /* It's returning errors if has some */
     if (errors.length > 0) return {
@@ -92,7 +93,8 @@ export const editServer = async ({ id, label, path, cmdline }: ServerDataType & 
         data: {
             label,
             path,
-            cmdline
+            cmdline,
+            autoStart
         }
     })
 

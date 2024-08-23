@@ -8,8 +8,9 @@ datasource db {
 }
 
 model Server {
-  id      String @id @unique @default(cuid())
-  label   String @default("Unnamed")
-  path    String
-  cmdline String
+  id        String  @id @unique @default(cuid())
+  label     String  @default("Unnamed")
+  path      String
+  cmdline   String
+  autoStart Boolean @default(false)
 }

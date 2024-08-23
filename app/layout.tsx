@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/navbar";
 import { ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 const merienda = Merienda({ subsets: ["latin"], weight: "400" });
@@ -33,6 +34,7 @@ export default function RootLayout({
             {modal}
           </div>
         </div>
+        <Toaster richColors={true} />
       </body>
     </html>
   );

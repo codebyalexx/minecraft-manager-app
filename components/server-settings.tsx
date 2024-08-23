@@ -7,8 +7,9 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Loader } from "./loader";
 import { editServer } from "@/actions/server.action";
-
-
+import { Checkbox } from "./ui/checkbox";
+import { toast } from "sonner"
+import { CheckCheckIcon } from "lucide-react";
 
 export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData: ServerDataType, serverId: string }) => {
     const [formData, setFormData] = useState<ServerDataType>(defaultFormData)
@@ -28,6 +29,13 @@ export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData:
         });
     }
 
+    const handleCheckChange = (checked: boolean) => {
+        setFormData({
+            ...formData,
+            autoStart: checked
+        })
+    }
+
     return <form onSubmit={async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
@@ -35,11 +43,13 @@ export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData:
 
         startTransition(async () => {
             const req = await editServer({ ...formData, id: serverId })
-
             if (req.success) {
-                alert("Succès !")
+                toast.success("Successfully updated server settings", {
+                    icon: <CheckCheckIcon className="w-4 h-4" />,
+                })
             } else {
                 setErrors(req.errors || [])
+                toast.error("An error has happened while saving server settings")
             }
         });
     }} className="space-y-4 bg-zinc-700 p-4 rounded-lg w-full max-w-2xl">
@@ -60,6 +70,12 @@ export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData:
             <Label htmlFor="cmdline" className={cmdlineError ? "text-red-500" : ""}>Java Command Line</Label>
             <Input id="cmdline" placeholder="java -Xms256M -Xmx1G -jar {JAR_FILENAME}" required value={formData.cmdline} onChange={handleChange} className={cmdlineError ? "border-red-500" : ""} />
             {cmdlineError ? <p className="text-sm text-red-500 font-semibold">{cmdlineError.message}</p> : null}
+        </div>
+        <div className="w-full space-x-2 flex items-center cursor-pointer">
+            <Checkbox id="autoStart" name="autoStart" checked={formData.autoStart} defaultChecked={formData.autoStart} onCheckedChange={handleCheckChange} className=" cursor-pointer" />
+            <Label htmlFor="autoStart" className="cursor-pointer">
+                Automatically starts server on application startup
+            </Label>
         </div>
         <Button type="submit" variant={"secondary"} className="items-center gap-2" disabled={isLoading}>
             {isLoading ? <><Loader /> Saving...</> : <>Save</>}

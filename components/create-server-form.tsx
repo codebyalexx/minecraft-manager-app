@@ -5,11 +5,16 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { createServer } from "@/actions/server.action";
+import { Checkbox } from "./ui/checkbox";
+import { Loader } from "./loader";
+import { CheckCheckIcon } from "lucide-react";
+import { toast } from "sonner";
 
 export type ServerDataType = {
     label: string;
     path: string;
     cmdline: string;
+    autoStart: boolean;
 }
 
 export type FormInputErrorType = {
@@ -21,6 +26,7 @@ const defaultFormData: ServerDataType = {
     label: "",
     path: "",
     cmdline: "java -Xms256M -Xmx1G -jar {JAR_FILENAME} nogui",
+    autoStart: false,
 }
 
 export const CreateServerForm = () => {
@@ -41,18 +47,27 @@ export const CreateServerForm = () => {
         });
     }
 
+    const handleCheckChange = (checked: boolean) => {
+        setFormData({
+            ...formData,
+            autoStart: checked
+        })
+    }
+
     return <form onSubmit={async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
         setErrors([]);
 
         startTransition(async () => {
-            const req = await createServer(formData)
-
+            const req = await createServer({ ...formData })
             if (req.success) {
-                alert("Succès !")
+                toast.success("Successfully updated server settings", {
+                    icon: <CheckCheckIcon className="w-4 h-4" />,
+                })
             } else {
                 setErrors(req.errors || [])
+                toast.error("An error has happened while saving server settings")
             }
         });
     }} className="space-y-4">
@@ -74,8 +89,14 @@ export const CreateServerForm = () => {
             <Input id="cmdline" placeholder="java -Xms256M -Xmx1G -jar {JAR_FILENAME}" required value={formData.cmdline} onChange={handleChange} className={cmdlineError ? "border-red-500" : ""} />
             {cmdlineError ? <p className="text-sm text-red-500 font-semibold">{cmdlineError.message}</p> : null}
         </div>
-        <Button type="submit" variant={"secondary"}>
-            Confirm
+        <div className="w-full space-x-2 flex items-center cursor-pointer">
+            <Checkbox id="autoStart" name="autoStart" checked={formData.autoStart} onCheckedChange={handleCheckChange} className=" cursor-pointer" />
+            <Label htmlFor="autoStart" className="cursor-pointer">
+                Automatically starts server on application startup
+            </Label>
+        </div>
+        <Button type="submit" variant={"secondary"} className="items-center gap-2" disabled={isLoading}>
+            {isLoading ? <><Loader /> Creating server...</> : <>Confirm</>}
         </Button>
     </form>
 }
