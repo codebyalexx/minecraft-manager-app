@@ -104,6 +104,17 @@ export const editServer = async ({ id, label, path, cmdline, autoStart }: Server
     }
 }
 
+export const deleteServer = async (id: string) => {
+    await prisma.server.delete({
+        where: {
+            id
+        }
+    })
+    return {
+        success: true
+    }
+}
+
 export const startServer = async (id: string) => {
     /* It's retrieving server instance */
     const serverManager = await getServerManager();

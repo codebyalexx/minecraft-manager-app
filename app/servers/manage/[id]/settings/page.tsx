@@ -1,11 +1,13 @@
 import { CodeBlock } from "@/components/code-block";
+import { DeleteServerDialog } from "@/components/delete-server-dialog";
 import { ErrorMessage } from "@/components/error-message";
 import { ServerSettings } from "@/components/server-settings";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getServer } from "@/queries/server.query";
-import { TwitterIcon } from "lucide-react";
+import { Trash2Icon, TwitterIcon } from "lucide-react";
 import Link from "next/link";
 
 export default async function page({ params }: { params: { id: string } }) {
@@ -41,8 +43,8 @@ export default async function page({ params }: { params: { id: string } }) {
                 <Skeleton className="w-full h-32 bg-zinc-900" />
             </div>
             <div className="space-y-4 bg-zinc-800 p-4 rounded-lg w-full">
-                <h2 className="text-xl font-bold">Delete</h2>
-                <Skeleton className="w-full h-32 bg-zinc-900" />
+                <h2 className="text-xl font-bold">Delete?</h2>
+                <DeleteServerDialog serverId={serverData.id} />
             </div>
         </div>
     </div>;
