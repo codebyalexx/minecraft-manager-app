@@ -2,6 +2,7 @@ import { CodeBlock } from "@/components/code-block";
 import { ErrorMessage } from "@/components/error-message";
 import { ServerSettings } from "@/components/server-settings";
 import { buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { getServer } from "@/queries/server.query";
 import { TwitterIcon } from "lucide-react";
@@ -29,6 +30,20 @@ export default async function page({ params }: { params: { id: string } }) {
                 Networking features will be soon available!
                 <Link href={"https://x.com/codebyalexx"} target="_blank" className={"text-fuchsia-500"}><TwitterIcon /></Link>
             </p>
+        </div>
+        <div className="col-span-2 grid grid-cols-3 gap-2">
+            <div className="space-y-4 bg-zinc-800 p-4 rounded-lg w-full">
+                <h2 className="text-xl font-bold">Lorem ipsum dolor sit amet consectetur adipisicing elit.</h2>
+                <Skeleton className="w-full h-32 bg-zinc-900" />
+            </div>
+            <div className="space-y-4 bg-zinc-800 p-4 rounded-lg w-full">
+                <h2 className="text-xl font-bold">Lorem ipsum dolor sit amet consectetur adipisicing elit.</h2>
+                <Skeleton className="w-full h-32 bg-zinc-900" />
+            </div>
+            <div className="space-y-4 bg-zinc-800 p-4 rounded-lg w-full">
+                <h2 className="text-xl font-bold">Delete</h2>
+                <Skeleton className="w-full h-32 bg-zinc-900" />
+            </div>
         </div>
     </div>;
 }

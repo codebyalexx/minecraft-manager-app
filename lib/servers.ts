@@ -209,15 +209,6 @@ class ServerInstance {
                     clearInterval(interv);
                     resolve(true)
                 } else {
-                    if (!this.ftpClient.connected) {
-                        await this.ftpClient.access({
-                            host: "localhost",
-                            user: this.id,
-                            password: "",
-                            secure: false,
-                        })
-                    }
-
                     clearInterval(interv)
                     resolve(true)
                 }
@@ -229,8 +220,14 @@ class ServerInstance {
         return new Promise(async (resolve) => {
             const rvalue: any[] = []
 
-            // wait for ftp connection if needed
             await this.requireFtp()
+
+            await this.ftpClient.access({
+                host: "localhost",
+                user: this.id,
+                password: "",
+                secure: false,
+            })
 
             const dirFiles: FileInfo[] = await this.ftpClient.list(path)
 
@@ -242,6 +239,8 @@ class ServerInstance {
                     size: file.size
                 })
             }
+
+            await this.ftpClient.close()
 
             resolve(rvalue)
         })
