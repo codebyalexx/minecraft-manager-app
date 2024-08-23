@@ -13,7 +13,7 @@ export const ServerNavbar = ({ serverId }: { serverId: string }) => {
     const pathname = usePathname();
 
     return <>
-        <div className="flex items-center justify-center bg-zinc-700 rounded-lg">
+        <div className="flex items-center justify-center bg-zinc-800 rounded-lg">
             <div className="w-full flex flex-col items-center">
                 <nav className="">
                     <NavigationMenu>

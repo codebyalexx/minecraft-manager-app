@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/navbar";
 import { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
+import Image from "next/image";
 
 const inter = Inter({ subsets: ["latin"] });
 const merienda = Merienda({ subsets: ["latin"], weight: "400" });
@@ -27,7 +28,9 @@ export default function RootLayout({
         <div className="w-full flex flex-col items-center my-10 mx-2">
           <div className="w-full max-w-6xl space-y-8">
             <header className="flex flex-col gap-6">
-              <h1 className={cn("text-3xl text-center", merienda.className)}>Minecraft Manager</h1>
+              <h1 className={cn("w-full flex items-center justify-center py-4", merienda.className)}>
+                <Image src={"/logo.png"} alt="Logo" width={1920} height={600} className="w-96" />
+              </h1>
               <Navbar />
             </header>
             {children}

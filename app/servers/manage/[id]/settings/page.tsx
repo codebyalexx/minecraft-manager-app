@@ -1,7 +1,11 @@
 import { CodeBlock } from "@/components/code-block";
 import { ErrorMessage } from "@/components/error-message";
 import { ServerSettings } from "@/components/server-settings";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { getServer } from "@/queries/server.query";
+import { TwitterIcon } from "lucide-react";
+import Link from "next/link";
 
 export default async function page({ params }: { params: { id: string } }) {
     const serverData = await getServer(params.id)
@@ -12,12 +16,19 @@ export default async function page({ params }: { params: { id: string } }) {
 
     const { cmdline, label, path, autoStart } = serverData
 
-    return <div className="w-full flex items-center justify-center">
+    return <div className="grid grid-cols-2 gap-2">
         <ServerSettings defaultFormData={{
             cmdline,
             label,
             path,
             autoStart
         }} serverId={params.id} />
+        <div className="space-y-4 bg-zinc-800 p-4 rounded-lg w-full">
+            <h2 className="text-xl font-bold">Networking</h2>
+            <p className="text-muted-foreground flex items-center gap-3">
+                Networking features will be soon available!
+                <Link href={"https://x.com/codebyalexx"} target="_blank" className={"text-fuchsia-500"}><TwitterIcon /></Link>
+            </p>
+        </div>
     </div>;
 }

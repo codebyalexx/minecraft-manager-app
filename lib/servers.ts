@@ -197,11 +197,27 @@ class ServerInstance {
                 if (this.manager?.ftpStarted === false) return;
                 if (this.ftpClient === null) {
                     this.ftpClient = new FTPClient()
-                    this.ftpClient.verbose = true
+                    this.ftpClient.verbose = false
+
+                    await this.ftpClient.access({
+                        host: "localhost",
+                        user: this.id,
+                        password: "",
+                        secure: false,
+                    })
 
                     clearInterval(interv);
                     resolve(true)
                 } else {
+                    if (!this.ftpClient.connected) {
+                        await this.ftpClient.access({
+                            host: "localhost",
+                            user: this.id,
+                            password: "",
+                            secure: false,
+                        })
+                    }
+
                     clearInterval(interv)
                     resolve(true)
                 }
@@ -213,25 +229,10 @@ class ServerInstance {
         return new Promise(async (resolve) => {
             const rvalue: any[] = []
 
-            console.log("getting ftp")
-
             // wait for ftp connection if needed
             await this.requireFtp()
 
-            console.log("ftp ok, connecting")
-
-            await this.ftpClient.access({
-                host: "localhost",
-                user: this.id,
-                password: "",
-                secure: false,
-            })
-
-            console.log("connection ok, listing")
-
             const dirFiles: FileInfo[] = await this.ftpClient.list(path)
-
-            console.log("listin ok, iterating")
 
             for (const file of dirFiles) {
                 rvalue.push({
@@ -241,10 +242,6 @@ class ServerInstance {
                     size: file.size
                 })
             }
-
-            console.log("iterating ok, resolving")
-
-            await this.ftpClient.close()
 
             resolve(rvalue)
         })

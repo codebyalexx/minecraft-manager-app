@@ -97,7 +97,7 @@ export default function page({ params }: { params: { id: string } }) {
 
     return <div className="grid grid-cols-7 gap-2">
         <aside className="col-span-2 w-full flex flex-col gap-2">
-            <div className="bg-zinc-700 rounded-lg p-3 space-y-1.5">
+            <div className="bg-zinc-800 rounded-lg p-3 space-y-1.5">
                 <h2 className="uppercase flex items-center font-medium mb-4 gap-2"><ServerIcon className="w-5 h-5" />{serverData?.label}</h2>
                 <p className="flex items-center gap-2 text-sm font-semibold font-mono">
                     <span className="flex items-center justify-center w-4 h-4">
@@ -123,7 +123,7 @@ export default function page({ params }: { params: { id: string } }) {
                     <HardDriveIcon className="w-4 h-4" /> <span>Unknown DISK usage <span className="text-muted-foreground inline-flex items-center gap-1">/ <InfinityIcon className="h-4" /></span></span>
                 </p>
             </div>
-            <div className="bg-zinc-700 rounded-lg p-3 flex items-center justify-between gap-2">
+            <div className="bg-zinc-800 rounded-lg p-3 flex items-center justify-between gap-2">
                 <Button className="w-full font-semibold" variant={"secondary"} disabled={["ON", "STARTING", "STOPPING"].includes(serverState)} onClick={async () => {
                     const req = await startServer(params.id)
 
@@ -145,9 +145,9 @@ export default function page({ params }: { params: { id: string } }) {
             </div>
         </aside>
         <main className="col-span-5 space-y-2">
-            <div className="flex flex-col justify-between h-96 pt-3 bg-zinc-700 rounded-lg">
+            <div className="flex flex-col justify-between h-96 pt-3 bg-zinc-800 rounded-lg">
                 <div className="p-3 pt-0 pb-4 text-xs font-mono overflow-y-scroll scrollbar" ref={consoleRef}>
-                    {logs.map((log: string) => <p>{log}</p>)}
+                    {logs.map((log: string) => <p key={log}>{log}</p>)}
                 </div>
                 <div className="flex items-center gap-2 p-2 rounded-lg">
                     <span className="text-white font-medium">$</span>
@@ -161,11 +161,11 @@ export default function page({ params }: { params: { id: string } }) {
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-                <div className="bg-zinc-700 flex flex-col p-3 rounded-lg space-y-2">
+                <div className="bg-zinc-800 flex flex-col p-3 rounded-lg space-y-2">
                     <h3 className="uppercase flex items-center font-medium gap-2"><MemoryStickIcon className="w-5 h-5" />MEMORY USAGE</h3>
                     <p className="text-sm text-muted-foreground">Memory usage is not supported yet.</p>
                 </div>
-                <div className="bg-zinc-700 flex flex-col p-3 rounded-lg space-y-2">
+                <div className="bg-zinc-800 flex flex-col p-3 rounded-lg space-y-2">
                     <h3 className="uppercase flex items-center font-medium gap-2"><CpuIcon className="w-5 h-5" />CPU USAGE</h3>
                     <p className="text-sm text-muted-foreground">Memory usage is not supported yet.</p>
                 </div>

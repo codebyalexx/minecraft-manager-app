@@ -35,7 +35,7 @@ export default function Page({ params }: { params: { id: string } }) {
         setPath(s.join("/") + "/")
     }
 
-    return <div className="bg-zinc-700 rounded-lg p-4 space-y-4">
+    return <div className="bg-zinc-800 rounded-lg p-4 space-y-4">
         <label htmlFor="select-all" className="flex items-center gap-6 cursor-pointer px-1"><Checkbox id="select-all" /> {path.length > 1 ? path : "/"}</label>
         {isLoading ? <Loader /> : <div>
             {path.length > 1 ? <FileLine onDirChange={handleGoBack} file={{
@@ -53,7 +53,7 @@ export default function Page({ params }: { params: { id: string } }) {
 const FileLine = ({ file, onDirChange }: { file: any, onDirChange?: (dir: string) => void }) => {
     const isDir = file.type === "dir"
 
-    return <div key={file.name} className="grid grid-cols-4 w-full py-1 px-3 hover:bg-zinc-600 rounded-lg cursor-pointer" onClick={(e) => {
+    return <div key={file.name} className="grid grid-cols-4 w-full py-1 px-3 hover:bg-zinc-900 rounded-lg cursor-pointer" onClick={(e) => {
         if (isDir && onDirChange !== undefined) {
             onDirChange(file.name);
         }
@@ -72,7 +72,7 @@ const FileLine = ({ file, onDirChange }: { file: any, onDirChange?: (dir: string
                 <DropdownMenuTrigger asChild>
                     <button className="outline-none group"><MoreVertical className="transition-all group-hover:stroke-[4px]" /></button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-36 bg-zinc-700">
+                <DropdownMenuContent className="w-36 bg-zinc-900">
                     {isDir ? "" : <DropdownMenuItem>
                         <FilePenIcon className="mr-2 h-4 w-4" />
                         <span>Edit</span>

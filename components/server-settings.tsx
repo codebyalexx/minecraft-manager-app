@@ -10,6 +10,7 @@ import { editServer } from "@/actions/server.action";
 import { Checkbox } from "./ui/checkbox";
 import { toast } from "sonner"
 import { CheckCheckIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData: ServerDataType, serverId: string }) => {
     const [formData, setFormData] = useState<ServerDataType>(defaultFormData)
@@ -52,32 +53,32 @@ export const ServerSettings = ({ defaultFormData, serverId }: { defaultFormData:
                 toast.error("An error has happened while saving server settings")
             }
         });
-    }} className="space-y-4 bg-zinc-700 p-4 rounded-lg w-full max-w-2xl">
+    }} className="space-y-4 bg-zinc-800 p-4 rounded-lg w-full">
         <h2 className="text-xl font-bold">Server Infos</h2>
         <div className="w-full space-y-1">
             <Label htmlFor="label" className={labelError ? "text-red-500" : ""}>Server Label</Label>
-            <Input id="label" placeholder="Lobby" required value={formData.label} onChange={handleChange} className={labelError ? "border-red-500" : ""} />
+            <Input id="label" placeholder="Lobby" required value={formData.label} onChange={handleChange} className={cn(labelError ? "border-red-500" : "", "bg-zinc-900")} />
             {labelError ? <p className="text-sm text-red-500 font-semibold">{labelError.message}</p> : null}
         </div>
         <div className="w-full space-y-1">
             <Label htmlFor="path" className={pathError ? "text-red-500" : ""}>Executable Path</Label>
             <div className="flex items-center gap-2">
-                <Input id="path" placeholder="/var/servers/lobby/server.jar" required value={formData.path} onChange={handleChange} className={pathError ? "border-red-500" : ""} />
+                <Input id="path" placeholder="/var/servers/lobby/server.jar" required value={formData.path} onChange={handleChange} className={cn(pathError ? "border-red-500" : "", "bg-zinc-900")} />
                 {pathError ? <p className="text-sm text-red-500 font-semibold">{pathError.message}</p> : null}
             </div>
         </div>
         <div className="w-full space-y-1">
             <Label htmlFor="cmdline" className={cmdlineError ? "text-red-500" : ""}>Java Command Line</Label>
-            <Input id="cmdline" placeholder="java -Xms256M -Xmx1G -jar {JAR_FILENAME}" required value={formData.cmdline} onChange={handleChange} className={cmdlineError ? "border-red-500" : ""} />
+            <Input id="cmdline" placeholder="java -Xms256M -Xmx1G -jar {JAR_FILENAME}" required value={formData.cmdline} onChange={handleChange} className={cn(cmdlineError ? "border-red-500" : "", "bg-zinc-900")} />
             {cmdlineError ? <p className="text-sm text-red-500 font-semibold">{cmdlineError.message}</p> : null}
         </div>
         <div className="w-full space-x-2 flex items-center cursor-pointer">
-            <Checkbox id="autoStart" name="autoStart" checked={formData.autoStart} defaultChecked={formData.autoStart} onCheckedChange={handleCheckChange} className=" cursor-pointer" />
+            <Checkbox id="autoStart" name="autoStart" checked={formData.autoStart} defaultChecked={formData.autoStart} onCheckedChange={handleCheckChange} className="cursor-pointer" />
             <Label htmlFor="autoStart" className="cursor-pointer">
                 Automatically starts server on application startup
             </Label>
         </div>
-        <Button type="submit" variant={"secondary"} className="items-center gap-2" disabled={isLoading}>
+        <Button type="submit" variant={"secondary"} className="bg-zinc-900 hover:bg-zinc-950 transition-all duration-150 items-center gap-2" disabled={isLoading}>
             {isLoading ? <><Loader /> Saving...</> : <>Save</>}
         </Button>
     </form>

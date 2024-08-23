@@ -50,7 +50,7 @@ export const Navbar = () => {
                                     buttonVariants({
                                         variant: "secondary"
                                     }),
-                                    pathname === item.href ? "!bg-blue-600" : "",
+                                    pathname === item.href ? "!bg-fuchsia-500" : "",
                                 )} aria-disabled>
                                     {item.contents}
                                 </NavigationMenuLink>
